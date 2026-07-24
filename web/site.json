@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "name": "gzhseam",
+  "github": "https://github.com/SuperMarioYL/gzhseam",
+  "host": "gzhseam.lei6393.com",
+  "lang": { "primary": "zh", "toggle": true },
+  "accent": ["#0071E3", "#34A0FF", "#5AC8FA"],
+  "hero": {
+    "eyebrow": { "zh": "本地 · 无账号 · 一条命令", "en": "Local · No account · One command" },
+    "headline": {
+      "zh": "把 coding agent 出的 HTML\n洗成公众号能接住的可编辑 HTML",
+      "en": "Wash coding-agent HTML into\n公众号-editor-pasteable, in-place-editable HTML"
+    },
+    "sub": {
+      "zh": "不用回 agent 改一个字 —— 贴进去就能在公众号编辑器就地改。",
+      "en": "No re-running the agent to tweak one word — paste the output and edit it in place inside the 公众号 editor."
+    },
+    "command": "gzhseam wash deck.html -o gzh-ready.html",
+    "cta": { "zh": "一条命令洗好", "en": "Wash it in one command" },
+    "ctaGithub": { "zh": "看源码", "en": "View source" },
+    "scroll": { "zh": "往下看怎么接的缝", "en": "See how the seam fits" }
+  },
+  "advantages": [
+    {
+      "title": { "zh": "改一个字不用回 agent 重跑", "en": "Tweak one word without re-running the agent" },
+      "body": {
+        "zh": "以前用 Claude Code 生成公众号 deck，改一个字都得回 agent 重跑、再手动把 HTML 洗进编辑器。现在贴进去就是公众号能接住的可编辑 HTML，就地改、就地发。",
+        "en": "You used to generate a 公众号 deck with Claude Code, then re-run the agent just to change one word, then hand-wash the HTML into the editor. Now paste, and it lands as 公众号-editable HTML — edit in place, publish in place."
+      },
+      "chips": ["› 12 张图 deck 30s 出活", "› 在公众号编辑器就地改", "› 不回 agent 改一个字"]
+    },
+    {
+      "title": { "zh": "公众号会吃掉的标签，洗之前就剥掉", "en": "公众号-stripped tags are removed before you paste" },
+      "body": {
+        "zh": "公众号会 strip 掉 script、iframe、video、外链字体 —— 你贴进去才发现图没了、样式塌了。GzhSeam 在你贴之前就把这些剥干净，再降级外链字体到公众号允许集，产出的 HTML 直接通过编辑器白名单。",
+        "en": "公众号 strips script, iframe, video, and external fonts — you only find out when images vanish and styles collapse after pasting. GzhSeam removes them first, falls back external fonts to the 公众号-allowed set, so the output passes the editor's whitelist on the first paste."
+      },
+      "chips": ["› 剥 script / iframe / video", "› on* 事件属性全剥", "› 外链字体降级到允许集"]
+    },
+    {
+      "title": { "zh": "纯本地洗，不碰你的账号", "en": "Pure local wash — no account, no upload" },
+      "body": {
+        "zh": "v0.1 完全离线运行 —— 不读你的公众号 cookie，不调你的 API，不上传任何东西。图片走公众号 CDN 是下一步（m2），默认不开，要开你自己接。",
+        "en": "v0.1 runs fully offline — it never reads your 公众号 cookie, calls your API, or uploads anything. Routing images through the 公众号 CDN is the next step (m2), off by default — you wire it yourself if you want it."
+      },
+      "chips": ["› 离线运行", "› 不读 cookie / 不调 API", "› CDN 上传是可选下一步"]
+    }
+  ],
+  "scene": { "kind": "hub-nodes", "nodes": ["Claude Code", "公众号编辑器"] },
+  "cta": {
+    "headline": { "zh": "agent 把生成做便宜了，瓶颈在贴进去这层缝", "en": "Agents made generation cheap — the bottleneck is the paste seam" },
+    "sub": { "zh": "GzhSeam 接的就是这层缝。一条命令，deck.html → 公众号能接住的可编辑 HTML。", "en": "GzhSeam fits exactly that seam. One command: deck.html → 公众号-pasteable, editable HTML." },
+    "button": { "zh": "看源码", "en": "View on GitHub" }
+  },
+  "footer": { "tag": { "zh": "MIT 开源 · 一条命令的缝", "en": "MIT open source · a one-command seam" } }
+}
