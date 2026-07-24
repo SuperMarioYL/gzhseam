@@ -1,0 +1,56 @@
+# --- python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+
+# --- tests / coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# --- type checkers ---
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# --- editors / os ---
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+*~
+
+# --- claude / agent tooling (do not ship) ---
+.claude/
+CLAUDE.md
+
+# --- build scratch + pipeline control files (never ship) ---
+.build_metadata*
+_build_ctx.json
+BUILD_SETUP_NEXT_STEPS.md
+.spawn*
+.builder_*
+.stage_*
+DRIFT_REPORT.md
+GIT_AUTHOR_DRIFT.md
+PUBLISH_BLOCKED.md
+
+# --- rendered demo gif is committed; ignore stray render tempfiles ---
+assets/demo.*.tmp
+
+# --- wash output (runtime artifact, not source) ---
+gzh-ready.html
+gzh-*.html
