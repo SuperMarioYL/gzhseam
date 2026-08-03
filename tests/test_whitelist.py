@@ -133,6 +133,37 @@ def test_idempotent_second_pass_zero_violations():
     assert v2 == []
 
 
+def test_drop_tag_with_children_does_not_crash():
+    """Regression for v0.2.0 ``fix-whitelist-crash-on-drop-tag-with-children``.
+
+    A DROP_TAG parent whose element children are also in the ``find_all``
+    snapshot must not crash with ``ValueError: Cannot replace an element with
+    its contents when that element is not part of a tree``. bs4 ``decompose()``
+    on the parent recursively destroys the children (blanks ``.name``, orphans
+    ``.parent``); the snapshot still references those destroyed tags, so a
+    later iteration hits the ``unwrap()`` branch on a detached tag. The guard
+    at the top of the loop skips already-destroyed/detached tags.
+
+    Covers the four ordinary coding-agent HTML patterns that reproduced the
+    crash: ``<noscript>``, ``<video>``, ``<template>``, ``<form>`` — each with
+    element children. Asserts no exception is raised AND the wash completes
+    (a string fragment is returned and a drop violation is reported).
+    """
+    cases = {
+        "noscript": "<noscript><p>x</p></noscript>",
+        "video": '<video><source src="a"><track kind="subtitles"></video>',
+        "template": "<template><div>y</div></template>",
+        "form": "<form><label>L</label><input><button>b</button></form>",
+    }
+    for name, src in cases.items():
+        out, v = whitelist.filter_html(src)  # must not raise
+        assert isinstance(out, str), f"{name}: expected a string output"
+        assert f"<{name}" not in out, f"{name}: dropped parent leaked into output"
+        assert any("dropped" in s for s in v), (
+            f"{name}: expected at least one 'dropped' violation"
+        )
+
+
 def test_sample_deck_fixture_washes_clean():
     """The committed sample deck (coding-agent output) must wash without
     leaving any platform-incompatible tag in the output."""

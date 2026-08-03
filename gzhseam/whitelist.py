@@ -171,6 +171,17 @@ def _drop_disallowed_tags(soup: BeautifulSoup) -> list[str]:
     violations: list[str] = []
     # iterate over a static list — we mutate the tree as we go.
     for tag in list(soup.find_all(True)):
+        # bs4 ``decompose()`` (called on a DROP_TAG parent below) recursively
+        # destroys descendants: it blanks ``.name`` and orphans them from the
+        # tree. The snapshot above still holds those destroyed tags, so a later
+        # iteration would otherwise call ``.unwrap()`` on a tree-detached tag
+        # and raise ``ValueError`` — crashing the entire wash with NO output on
+        # ordinary coding-agent HTML like ``<noscript><p>…</p></noscript>``,
+        # ``<video><source>…</video>``, ``<template>…</template>``,
+        # ``<form>…</form>``. Skip any tag already destroyed/detached by an
+        # earlier ``decompose()`` in this same pass.
+        if getattr(tag, "decomposed", False) or tag.parent is None:
+            continue
         name = tag.name
         if name in PARSER_SCAFFOLD_TAGS:
             # parser scaffolding — leave in tree, serializer drops it.

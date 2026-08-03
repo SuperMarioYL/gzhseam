@@ -71,6 +71,37 @@ def test_font_normalize_preserves_other_declarations():
     assert "font-size: 14px" in new
 
 
+def test_normalize_style_preserves_data_url_with_semicolon_in_value():
+    """Regression for v0.2.0 ``fix-fonts-normalize-style-corrupts-semicolon-in-values``.
+
+    A ``;``-bearing value (a data-URL ``background``) co-occurring with a
+    non-allowed ``font-family`` remap must survive intact. The old
+    implementation re-parsed the whole style with a ``;``-splitting regex and
+    re-emitted every declaration, splitting the data URL at its ``;``, leaving
+    ``url(`` unclosed, truncating the data URL, and dropping adjacent
+    declarations. The fix touches ONLY ``font-family`` declarations and leaves
+    the rest of the style string verbatim.
+    """
+    src = (
+        "font-family: 'Fira Code', monospace; "
+        "background: url(data:image/png;base64,iVBOR=) no-repeat; "
+        "color: red; font-size: 14px"
+    )
+    new, notes = fonts.normalize_style(src)
+    # the data URL survived intact (no ; -split corruption)
+    assert "url(data:image/png;base64,iVBOR=) no-repeat" in new
+    # no stray ;; / "; ;" artifacts from a ;-splitting re-parse
+    assert ";;" not in new
+    assert "; ;" not in new
+    # font-family WAS remapped ('Fira Code' is not allowed -> mono bucket)
+    assert "Fira Code" not in new
+    assert "monospace" in new
+    assert notes  # a rewrite was reported
+    # adjacent declarations survived verbatim
+    assert "color: red" in new
+    assert "font-size: 14px" in new
+
+
 # --- pipeline (m1 path) ----------------------------------------------------
 
 

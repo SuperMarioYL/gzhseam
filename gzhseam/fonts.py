@@ -65,8 +65,17 @@ SANS_HINTS: tuple[str, ...] = ("sans", "pingfang", "yahei", "heiti", "helvetica"
 MONO_HINTS: tuple[str, ...] = ("mono", "menlo", "monaco", "consolas", "courier", "fira code", "jetbrains", "operator mono", "source code", "ui-monospace", "sf mono")
 
 
-_STYLE_RE = re.compile(r"font-family\s*:\s*([^;]+)", re.IGNORECASE)
-_DECL_RE = re.compile(r"([^:]+?)\s*:\s*([^;]+)")
+#: Matches a single ``font-family`` declaration, capturing (1) the
+#: ``font-family\s*:\s*`` prefix (so the original spacing around the colon is
+#: preserved verbatim on splice-back) and (2) the value up to the next ``;``
+#: or end-of-string. ``font-family`` values never legitimately contain ``;``
+#: (CSS uses ``,`` to separate family names, not ``;``), so ``[^;]+`` is safe
+#: here — unlike a whole-style ``;``-splitting regex, which would corrupt
+#: ``;``-bearing values like data-URL ``background`` or quoted ``content``
+#: strings co-occurring with a font-family remap.
+_FONT_FAMILY_RE = re.compile(
+    r"(font-family\s*:\s*)([^;]+)", re.IGNORECASE
+)
 
 
 def _classify_token(tok: str) -> str:
@@ -107,24 +116,30 @@ def normalize_style(style: str) -> tuple[str, list[str]]:
     """Normalize one inline ``style`` string.
 
     Returns ``(new_style, notes)``. Re-maps every ``font-family`` declaration
-    to an allowed chain; leaves other declarations untouched (the CSS
-    property whitelist is enforced by :mod:`gzhseam.whitelist`).
+    to an allowed chain and leaves every *other* declaration **verbatim** —
+    the style string is spliced around the font-family matches, never
+    re-parsed through a ``;``-splitting regex, so values that legitimately
+    contain ``;`` (data-URL ``background``, quoted ``content`` strings)
+    survive a co-occurring font-family remap intact. The CSS property
+    whitelist is enforced by :mod:`gzhseam.whitelist`.
+
+    Idempotent: a second pass on already-normalized HTML produces zero notes,
+    because a remapped chain consists solely of allowed tokens.
     """
     if not style:
         return "", []
     notes: list[str] = []
-    out_decls: list[str] = []
-    for key, val in _DECL_RE.findall(style):
-        k = key.strip().lower()
-        v = val.strip()
-        if k == "font-family":
-            new = _nearest_family(v)
-            if new != v:
-                notes.append(f"font-family: {v!r} -> {new!r}")
-            out_decls.append(f"font-family: {new}")
-        else:
-            out_decls.append(f"{key.strip()}: {v}")
-    return "; ".join(out_decls), notes
+
+    def _remap_font_family(m: re.Match[str]) -> str:
+        prefix, val = m.group(1), m.group(2)
+        stripped = val.strip()
+        new = _nearest_family(stripped)
+        if new != stripped:
+            notes.append(f"font-family: {stripped!r} -> {new!r}")
+        return f"{prefix}{new}"
+
+    new_style = _FONT_FAMILY_RE.sub(_remap_font_family, style)
+    return new_style, notes
 
 
 def normalize_fonts(html: str) -> tuple[str, list[str]]:
