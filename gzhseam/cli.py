@@ -42,8 +42,18 @@ def _split_and_count(path: Path) -> tuple[str, int]:
     """Read a single HTML file; return (text, img_count).
 
     img_count is reported by the demo's progress output ("1 个 deck, 12 张图").
+
+    v0.3.0 ``fix-wash-non-utf8-input-traceback``: a deck saved as GB18030/latin-1
+    (plausible for the CN audience gzhseam targets, and for any non-coding-agent
+    HTML fed in) used to raise an uncaught ``UnicodeDecodeError`` traceback and
+    exit 1 with no clean message. Now the read is guarded and fails with a clean
+    red ``✗`` + ``sys.exit(2)`` — the same clean-error pattern ``wash --cdn`` uses.
     """
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        console.print(f"[red]✗[/red] {path} is not valid UTF-8; convert it first")
+        sys.exit(2)
     # cheap count — we don't parse here, just for the progress line.
     img_count = text.lower().count("<img")
     return text, img_count
@@ -104,7 +114,19 @@ def wash(deck: Path, output: Path, cdn: bool, verbose: bool) -> None:
     else:
         artifact = _wash_pipeline(text, GzhCtx(upload_cdn=False))
 
-    output.write_text(artifact.html, encoding="utf-8")
+    # v0.3.0 ``fix-wash-output-dir-not-created``: ``-o subdir/out.html`` where
+    # ``subdir/`` does not exist used to abort with an uncaught
+    # ``FileNotFoundError`` traceback mid-run, AFTER the wash already succeeded
+    # and the three cyan progress lines were printed. Now the parent dir is
+    # created (``parents=True, exist_ok=True`` — a no-op on ``.`` / ``/`` so bare
+    # filenames are fine), and any residual ``OSError`` fails with a clean red
+    # ``✗`` + ``sys.exit(2)`` — the same clean-error pattern ``wash --cdn`` uses.
+    try:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(artifact.html, encoding="utf-8")
+    except OSError as e:
+        console.print(f"[red]✗[/red] 无法写入输出文件 {output}: {e}")
+        sys.exit(2)
     console.print(
         f"[green]✓[/green] {output} 已生成"
         + ("（图片全部走公众号 CDN，" if cdn else "（纯本地洗，")
@@ -129,10 +151,20 @@ def wash(deck: Path, output: Path, cdn: bool, verbose: bool) -> None:
 @cli.command()
 def init() -> None:
     """Write ``~/.gzhseam/credentials.toml`` from interactive prompts (m3 stub)."""
-    raise NotImplementedError(
-        "gzhseam init is the m3 stage — interactive credential setup lands in "
-        "mvp_plan.md §5 m3. m1 wash is local-only and needs no credentials."
-    )
+    # v0.3.0 ``fix-init-auth-stub-traceback``: the stub used to ``raise
+    # NotImplementedError`` directly, giving a cloner a bare Python traceback
+    # (exit 1, no console output) as their first CLI impression. Now it fails
+    # with the same clean red ``✗`` + ``sys.exit(2)`` pattern ``wash --cdn``
+    # uses — the stub stays a stub (v0.3.0 is not an m2/m3 implementation
+    # release), just no longer ugly.
+    try:
+        raise NotImplementedError(
+            "gzhseam init is the m3 stage — interactive credential setup lands in "
+            "mvp_plan.md §5 m3. m1 wash is local-only and needs no credentials."
+        )
+    except NotImplementedError as e:
+        console.print(f"[red]✗[/red] {e}")
+        sys.exit(2)
 
 
 @cli.group(name="auth")
@@ -143,10 +175,18 @@ def auth_group() -> None:
 @auth_group.command(name="login")
 def auth_login() -> None:
     """Exchange AppID/Secret for an access_token and cache it (m2 stub)."""
-    raise NotImplementedError(
-        "gzhseam auth login is the m2 stage — access_token caching lands in "
-        "mvp_plan.md §5 m2. m1 wash is local-only and needs no auth."
-    )
+    # v0.3.0 ``fix-init-auth-stub-traceback``: same clean-failure treatment as
+    # ``gzhseam init`` above — the stub no longer tracebacks with a bare
+    # ``NotImplementedError``; it prints a clean red ``✗`` + ``sys.exit(2)``,
+    # matching the ``wash --cdn`` path.
+    try:
+        raise NotImplementedError(
+            "gzhseam auth login is the m2 stage — access_token caching lands in "
+            "mvp_plan.md §5 m2. m1 wash is local-only and needs no auth."
+        )
+    except NotImplementedError as e:
+        console.print(f"[red]✗[/red] {e}")
+        sys.exit(2)
 
 
 @cli.command()

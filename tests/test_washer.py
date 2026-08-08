@@ -19,11 +19,13 @@ import sys
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from gzhseam import fonts, whitelist  # noqa: E402
+from gzhseam import cli as cli_mod  # noqa: E402
 from gzhseam.washer import wash, GzhCtx, GzhArtifact  # noqa: E402
 
 
@@ -189,3 +191,118 @@ def test_token_cache_stub_raises():
         cache.get()
     with pytest.raises(NotImplementedError):
         cache.put("tok", 7200)
+
+
+# --- v0.3.0 CLI clean-failure regressions ------------------------------------
+# All three v0.3.0 fixes share one contract: an edge-case input that used to
+# abort with a bare Python traceback (exit 1, empty output) must now fail with
+# the same clean red ``✗`` + ``sys.exit(2)`` pattern ``wash --cdn`` already uses
+# (cli.py:99-103). The clean ``sys.exit(2)`` surfaces in CliRunner as
+# ``r.exit_code == 2`` + ``r.exception`` being a ``SystemExit`` (the expected
+# clean-exit mechanism) — NOT the old bad exception type (``NotImplementedError``,
+# ``UnicodeDecodeError``, ``OSError``). Each case below asserts exit 2, a ``✗``
+# line in output, and that the old traceback type is gone.
+
+
+def test_wash_creates_missing_output_parent_dir(tmp_path):
+    """v0.3.0 ``fix-wash-output-dir-not-created`` — happy path.
+
+    ``-o subdir/out.html`` where ``subdir/`` does not exist used to abort
+    mid-run with an uncaught ``FileNotFoundError`` traceback, AFTER the wash
+    already succeeded and the three cyan progress lines were printed. Now the
+    parent dir is created (``parents=True, exist_ok=True``) and the output file
+    is written, so the single happy path completes cleanly.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_text("<p>hi</p>", encoding="utf-8")
+    out = tmp_path / "subdir" / "out.html"  # subdir/ does not exist yet
+    assert not out.parent.exists()
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 0, r.output
+    assert r.exception is None
+    assert out.exists()
+    assert out.read_text(encoding="utf-8")  # non-empty output written
+
+
+def test_wash_fails_cleanly_when_output_parent_is_a_file(tmp_path):
+    """v0.3.0 ``fix-wash-output-dir-not-created`` — clean failure.
+
+    When the ``-o`` parent path collides with an existing file, ``mkdir``
+    raises an ``OSError`` (``FileExistsError``) which is now caught and
+    reported as a clean red ``✗`` + ``sys.exit(2)`` — instead of an uncaught
+    traceback mid-run after the wash already succeeded. No output file is
+    written.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_text("<p>hi</p>", encoding="utf-8")
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a dir", encoding="utf-8")
+    out = blocker / "out.html"  # parent is a file -> OSError on mkdir
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    # the OSError was caught -> only a clean SystemExit remains (no OSError
+    # traceback propagated)
+    assert not isinstance(r.exception, OSError)
+    assert not out.exists()
+
+
+def test_wash_fails_cleanly_on_non_utf8_input(tmp_path):
+    """v0.3.0 ``fix-wash-non-utf8-input-traceback``.
+
+    A deck saved as latin-1 (plausible for the CN audience gzhseam targets, and
+    for any non-coding-agent HTML fed in) used to raise an uncaught
+    ``UnicodeDecodeError`` traceback and exit 1 with no message. Now the UTF-8
+    read is guarded and fails with a clean red ``✗`` + a "not valid UTF-8" line
+    + ``sys.exit(2)`` — no output file written.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_bytes(b"<p>caf\xe9</p>")  # 0xe9 is invalid as UTF-8
+    out = tmp_path / "out.html"
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    assert "not valid UTF-8" in r.output
+    # the UnicodeDecodeError was caught -> only a clean SystemExit remains
+    assert not isinstance(r.exception, UnicodeDecodeError)
+    assert not out.exists()
+
+
+def test_init_stub_fails_cleanly():
+    """v0.3.0 ``fix-init-auth-stub-traceback``.
+
+    ``gzhseam init`` used to ``raise NotImplementedError`` directly, giving a
+    cloner a bare Python traceback (exit 1, no console output) as their first
+    CLI impression. Now it fails with the same clean red ``✗`` + ``sys.exit(2)``
+    pattern ``wash --cdn`` uses — exit 2, a ``✗`` line in output, and the
+    ``NotImplementedError`` is caught (no traceback propagated). The stub
+    message still points at the roadmap.
+    """
+    r = CliRunner().invoke(cli_mod.cli, ["init"])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    # the NotImplementedError was caught -> only a clean SystemExit remains
+    assert not isinstance(r.exception, NotImplementedError)
+    assert "m3 stage" in r.output  # stub message still points at the roadmap
+
+
+def test_auth_login_stub_fails_cleanly():
+    """v0.3.0 ``fix-init-auth-stub-traceback``.
+
+    ``gzhseam auth login`` gets the same clean-failure treatment as
+    ``gzhseam init`` above — exit 2, a ``✗`` line, the ``NotImplementedError``
+    caught, and the stub message still points at the roadmap.
+    """
+    r = CliRunner().invoke(cli_mod.cli, ["auth", "login"])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    assert not isinstance(r.exception, NotImplementedError)
+    assert "m2 stage" in r.output  # stub message still points at the roadmap
