@@ -44,6 +44,14 @@
         "en": "You cloned it, hit a snag, and filing meant digging for the issues URL and guessing what to include. Now run gzhseam feedback — your browser opens the project issues page, and the prefilled templates ask for exactly the fields that make a high-signal report: version, OS, the input HTML, the command you ran, what you saw vs expected. File a useful bug in under a minute."
       },
       "chips": ["› 一条命令打开 issues", "› 预填模板要的全是关键字段", "› 一分钟提一个高信号 issue"]
+    },
+    {
+      "title": { "zh": "撞到怪输入，不再一坨报错栈", "en": "Weird input no longer dumps a raw traceback" },
+      "body": {
+        "zh": "喂了一份非 UTF-8 的 deck、把 -o 指到一个还不存在的目录、或手滑跑了 init / auth login —— 以前直接甩一坨报错栈，啥提示都没有，新人 clone 下来第一眼就劝退。现在这几处都给你一条干净的红字，告诉你卡在哪、该怎么往下走，不再被一坨栈吓住。",
+        "en": "Feed a non-UTF-8 deck, point -o at a directory that doesn't exist yet, or accidentally run init / auth login — it used to throw a raw traceback with no message at all, the kind that scares off a new cloner on first run. Now each of those prints one clean red line telling you where it's stuck and how to move on, instead of a wall of stack."
+      },
+      "chips": ["› 非 UTF-8 deck 不再崩", "› 输出目录不存在会自动建好", "› init / auth 不再甩报错栈"]
     }
   ],
   "scene": { "kind": "hub-nodes", "nodes": ["Claude Code", "公众号编辑器"] },
