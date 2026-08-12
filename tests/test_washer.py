@@ -306,3 +306,84 @@ def test_auth_login_stub_fails_cleanly():
     assert "✗" in r.output
     assert not isinstance(r.exception, NotImplementedError)
     assert "m2 stage" in r.output  # stub message still points at the roadmap
+
+
+# --- v0.4.0 CLI clean-failure regressions ------------------------------------
+# The v0.3.0 clean-failure theme had one inverse gap: an empty or
+# whitespace-only deck (or, after the v0.4.0 fragment fix, a head-only deck
+# that washes to nothing) used to exit 0 with a green ``✓`` and a 0-byte
+# output file — the "empty input" violation surfaced only under --verbose.
+# Now the empty-output case fails with the same clean red ``✗`` + sys.exit(2)
+# pattern the non-UTF-8 / missing-output-dir / init-auth-stub paths use, and
+# writes no output file.
+
+
+def test_wash_fails_cleanly_on_empty_input(tmp_path):
+    """v0.4.0 ``fix-wash-silent-success-on-empty-input`` — empty file.
+
+    ``gzhseam wash empty.html -o out.html`` used to exit 0 with a green ``✓``
+    and write a 0-byte output file, surfacing the "empty input" violation
+    only under ``--verbose``. Now it fails with the same clean red ``✗`` +
+    ``sys.exit(2)`` pattern the non-UTF-8 / missing-output-dir / init-auth-stub
+    paths use, and writes no output file. Pre-fix: exit 0, ``✓`` in output,
+    0-byte ``out.html`` written.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_text("", encoding="utf-8")  # empty
+    out = tmp_path / "out.html"
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    assert "✓" not in r.output  # the green silent-success line is gone
+    assert not out.exists()  # no 0-byte file written
+
+
+def test_wash_fails_cleanly_on_whitespace_only_input(tmp_path):
+    """v0.4.0 ``fix-wash-silent-success-on-empty-input`` — whitespace-only.
+
+    Same contract as the empty-file case above, but for a deck containing only
+    whitespace (spaces/tabs/newlines, no content). The pre-fix CLI wrote a
+    0-byte file and printed a green ``✓``; now it fails cleanly.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_text("   \n\t  \n", encoding="utf-8")  # whitespace-only
+    out = tmp_path / "out.html"
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    assert "✓" not in r.output
+    assert not out.exists()
+
+
+def test_wash_head_only_deck_fails_cleanly_no_wrapper_leak(tmp_path):
+    """v0.4.0 end-to-end composition of both fixes.
+
+    A head-only deck (only DROP_TAGS like ``<script>``) exercises BOTH v0.4.0
+    fixes in sequence:
+
+    1. ``fix-serialize-fragment-leaks-html-head-wrapper``: the wash must NOT
+       leak the ``<html><head></head></html>`` wrapper into ``artifact.html``
+       — it must produce an empty fragment instead.
+    2. ``fix-wash-silent-success-on-empty-input``: with the now-empty
+       ``artifact.html``, the CLI must fail cleanly (red ``✗`` + exit 2, no
+       output file) instead of the pre-fix path which wrote the leaked wrapper
+       to the output file and printed a green ``✓``.
+
+    Pre-fix: exit 0, ``✓`` in output, ``out.html`` written containing
+    ``<html><head></head></html>``. Post-fix: exit 2, ``✗`` in output, no
+    output file.
+    """
+    deck = tmp_path / "deck.html"
+    deck.write_text("<script>alert(1)</script>", encoding="utf-8")  # head-only
+    out = tmp_path / "out.html"
+
+    r = CliRunner().invoke(cli_mod.cli, ["wash", str(deck), "-o", str(out)])
+
+    assert r.exit_code == 2, r.output
+    assert "✗" in r.output
+    assert "✓" not in r.output  # no green success on the corrupted/empty output
+    assert not out.exists()  # no leaked-wrapper file written

@@ -164,6 +164,64 @@ def test_drop_tag_with_children_does_not_crash():
         )
 
 
+def test_head_only_input_serializes_empty_no_html_wrapper_leak():
+    """Regression for v0.4.0 ``fix-serialize-fragment-leaks-html-head-wrapper``.
+
+    A deck containing ONLY head-level DROP_TAGS (``script``/``style``/
+    ``meta``/``title``/``link``) makes lxml place them in ``<head>`` and create
+    NO ``<body>``. After :func:`_drop_disallowed_tags` decomposes those tags,
+    ``soup.body is None`` and the pre-fix fallback
+    ``container = soup.body or soup`` (whitelist.py) serialized the entire
+    ``<html><head></head></html>`` document — exactly the document scaffolding
+    the wash is contractually supposed to strip. The fix returns an empty
+    fragment when ``soup.body is None`` (no body = no article content to emit).
+
+    Covers the three head-only patterns that reproduced the leak end-to-end
+    in the bug-hunt finding: script-only, style-only, meta+title. Pre-fix each
+    case returned ``<html><head></head></html>``; post-fix each returns ``""``.
+    """
+    cases = {
+        "script-only": "<script>alert(1)</script>",
+        "style-only": "<style>body{}</style>",
+        "meta+title": "<meta charset='utf-8'><title>T</title>",
+    }
+    for name, src in cases.items():
+        out, v = whitelist.filter_html(src)
+        # the document wrapper must NOT leak into the fragment
+        assert "<html" not in out, f"{name}: <html> wrapper leaked into fragment: {out!r}"
+        assert "<head" not in out, f"{name}: <head> wrapper leaked into fragment: {out!r}"
+        assert out == "", f"{name}: expected empty fragment, got {out!r}"
+        # the head-level tags are still reported as dropped (diagnostics survive)
+        assert any("dropped" in s for s in v), f"{name}: expected a 'dropped' violation"
+
+
+def test_normalize_fonts_head_only_input_no_wrapper_leak():
+    """Regression for v0.4.0 ``fix-serialize-fragment-leaks-html-head-wrapper``
+    (fonts stage).
+
+    :func:`gzhseam.fonts.normalize_fonts` carried the identical
+    ``container = soup.body or soup`` fallback (fonts.py), so a head-only input
+    re-parsed through the font stage leaked the ``<html><head>...</html>``
+    wrapper unchanged. The fix applies the same ``soup.body is None`` guard so
+    the font stage returns an empty fragment rather than the document wrapper.
+
+    Called directly (not through the pipeline) so the fonts-stage guard is
+    exercised in isolation — the normal pipeline never reaches this path
+    because :func:`whitelist.filter_html` already returns ``""`` for head-only
+    input and ``normalize_fonts("")`` early-returns.
+    """
+    from gzhseam import fonts
+    cases = {
+        "script-only": "<script>alert(1)</script>",
+        "meta+title": "<meta charset='utf-8'><title>T</title>",
+    }
+    for name, src in cases.items():
+        out, _ = fonts.normalize_fonts(src)
+        assert "<html" not in out, f"{name}: <html> wrapper leaked from fonts stage: {out!r}"
+        assert "<head" not in out, f"{name}: <head> wrapper leaked from fonts stage: {out!r}"
+        assert out == "", f"{name}: expected empty fragment from fonts stage, got {out!r}"
+
+
 def test_sample_deck_fixture_washes_clean():
     """The committed sample deck (coding-agent output) must wash without
     leaving any platform-incompatible tag in the output."""
