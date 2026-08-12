@@ -12,8 +12,8 @@
       "en": "Wash coding-agent HTML into\n公众号-editor-pasteable, in-place-editable HTML"
     },
     "sub": {
-      "zh": "不用回 agent 改一个字 —— 贴进去就能在公众号编辑器就地改；带 noscript / video / template / form 的 deck 也洗得过去。",
-      "en": "No re-running the agent to tweak one word — paste and edit in place in the 公众号 editor; decks with noscript / video / template / form wash clean too."
+      "zh": "不用回 agent 改一个字 —— 贴进公众号编辑器就地改；带 noscript / video / template / form 的 deck 也洗得过去，空了、怪了也不装成功。",
+      "en": "No re-running the agent to tweak one word — paste and edit in place in the 公众号 editor; decks with noscript / video / template / form wash clean too, and empty or weird input never fakes a green ✓."
     },
     "command": "gzhseam wash deck.html -o gzh-ready.html",
     "cta": { "zh": "一条命令洗好", "en": "Wash it in one command" },
@@ -46,12 +46,12 @@
       "chips": ["› 一条命令打开 issues", "› 预填模板要的全是关键字段", "› 一分钟提一个高信号 issue"]
     },
     {
-      "title": { "zh": "撞到怪输入，不再一坨报错栈", "en": "Weird input no longer dumps a raw traceback" },
+      "title": { "zh": "空了就告诉你空了 —— 不再泄外壳、不再装成功", "en": "Washes to nothing? It says so — no wrapper leak, no fake success" },
       "body": {
-        "zh": "喂了一份非 UTF-8 的 deck、把 -o 指到一个还不存在的目录、或手滑跑了 init / auth login —— 以前直接甩一坨报错栈，啥提示都没有，新人 clone 下来第一眼就劝退。现在这几处都给你一条干净的红字，告诉你卡在哪、该怎么往下走，不再被一坨栈吓住。",
-        "en": "Feed a non-UTF-8 deck, point -o at a directory that doesn't exist yet, or accidentally run init / auth login — it used to throw a raw traceback with no message at all, the kind that scares off a new cloner on first run. Now each of those prints one clean red line telling you where it's stuck and how to move on, instead of a wall of stack."
+        "zh": "喂一份只剩 head 级标签（script / style / meta / title / link）的 deck，以前洗完会留一坨空的 <html><head></head></html> 外壳 —— 贴进去就是没用的脚手架；喂一份空的或纯空白的 deck，还会写一个 0 字节文件、打绿勾 —— 你以为洗好了，一贴啥也没有。现在这两种都老实了：只剩 head 标签的洗完是空片段、不带外壳；空的或洗后无残留的直接红 ✗ 退出、不写空文件。非 UTF-8 的 deck、-o 指到不存在的目录、手滑跑了 init / auth login，也统一是这条干净的红字 —— 告诉你卡在哪、该怎么往下走，不再被一坨报错栈吓住。",
+        "en": "Feed a deck that's only head-level tags (script / style / meta / title / link) and the wash used to leave the empty <html><head></head></html> wrapper in the output — useless scaffolding you'd paste. Feed an empty or whitespace-only deck and it wrote a 0-byte file with a green ✓ — looked done, pasted nothing. Now both are honest: a head-only deck washes to an empty fragment with no wrapper, and an empty or fully-stripped deck fails cleanly with a red ✗ and writes no file. A non-UTF-8 deck, an -o pointing at a directory that doesn't exist yet, or an accidental init / auth login all get the same clean red line — telling you where it's stuck and how to move on, instead of a wall of traceback."
       },
-      "chips": ["› 非 UTF-8 deck 不再崩", "› 输出目录不存在会自动建好", "› init / auth 不再甩报错栈"]
+      "chips": ["› 只剩 head 标签的 deck 不再泄外壳", "› 空输入红 ✗ 退出、不写空文件", "› 非 UTF-8 / 缺目录 / init-auth 都是一条红字"]
     }
   ],
   "scene": { "kind": "hub-nodes", "nodes": ["Claude Code", "公众号编辑器"] },
