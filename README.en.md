@@ -136,6 +136,11 @@ v0.1 is free OSS for individuals — the seam is free for every creator. The com
 
 Individual users are free forever; the team tier is what's paid for, not the personal tool.
 
+<h2><img src="https://api.iconify.design/tabler:history.svg?color=%230071E3&width=24" height="22" align="absmiddle" alt=""> Changelog</h2>
+
+- **v0.4.0** — wash edge-case hardening: a deck containing only head-level tags (`<script>`/`<style>`/`<meta>`/`<title>`/`<link>`, all DROP_TAGS) no longer leaks the `<html><head>` document wrapper — `_serialize_fragment` and `fonts.normalize_fonts` return an empty fragment when lxml created no `<body>`, instead of falling back to the whole document; `gzhseam wash` on empty / whitespace-only (or fully-stripped) input now fails cleanly — red `✗` + `sys.exit(2)`, no 0-byte file written — matching the v0.3.0 clean-failure pattern.
+- **v0.3.0** — wash edge-case clean-failure fixes: non-UTF-8 input, a missing output dir, and the `init`/`auth login` stubs no longer raise a bare traceback; all now fail with a red `✗` + `sys.exit(2)`.
+
 <h2><img src="https://api.iconify.design/tabler:license.svg?color=%230071E3&width=24" height="22" align="absmiddle" alt=""> License</h2>
 
 MIT — see [LICENSE](./LICENSE). Issues, bugs, and PRs at [GitHub Issues](https://github.com/SuperMarioYL/gzhseam/issues).

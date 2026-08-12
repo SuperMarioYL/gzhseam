@@ -136,6 +136,11 @@ v0.1 是个人免费 OSS——这条 seam 对所有创作者免费。商业延�
 
 个人用户永远免费；为团队需求付费，不为个人工具付费。
 
+<h2><img src="https://api.iconify.design/tabler:history.svg?color=%230071E3&width=24" height="22" align="absmiddle" alt=""> 更新日志</h2>
+
+- **v0.4.0** — wash 边界硬化：仅含 head 级标签（`<script>`/`<style>`/`<meta>`/`<title>`/`<link>`，均属 DROP_TAGS）的 deck 不再泄漏 `<html><head>` 文档外壳——`_serialize_fragment` 与 `fonts.normalize_fonts` 在 lxml 未生成 `<body>` 时返回空片段，而非回退到整文档；`gzhseam wash` 对空 / 仅空白（或洗后无残留）的输入改为干净失败：红 `✗` + `sys.exit(2)`、不写 0 字节文件，对齐 v0.3.0 的 clean-failure 模式。
+- **v0.3.0** — wash 边界用例的 clean-failure 修复：非 UTF-8 输入、缺失输出目录、`init`/`auth login` 存根不再抛裸 traceback，统一红 `✗` + `sys.exit(2)`。
+
 <h2><img src="https://api.iconify.design/tabler:license.svg?color=%230071E3&width=24" height="22" align="absmiddle" alt=""> License</h2>
 
 MIT —— 见 [LICENSE](./LICENSE)。问题、bug、PR 走 [GitHub Issues](https://github.com/SuperMarioYL/gzhseam/issues)。

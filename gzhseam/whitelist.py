@@ -228,12 +228,19 @@ def _serialize_fragment(soup: BeautifulSoup) -> str:
     fragment. Output is a pure fragment, the shape the 公众号 editor expects
     on paste.
 
-    If the document has a ``<body>`` tag (always present when lxml parses a
-    fragment), serialize its inner HTML; otherwise serialize the document's
-    inner HTML as a fallback.
+    If the document has a ``<body>`` tag (the normal case — lxml synthesizes
+    one around any fragment with body-level elements), serialize its inner
+    HTML. When lxml created no ``<body>`` — which happens when the input
+    contained only head-level elements (``script``/``style``/``meta``/
+    ``title``/``link``, all :data:`DROP_TAGS`, decomposed earlier by
+    :func:`_drop_disallowed_tags`) — there is no article content to emit,
+    so return an empty fragment rather than leaking the
+    ``<html><head></head></html>`` document wrapper the wash is
+    contractually supposed to strip.
     """
-    container = soup.body or soup
-    return container.decode_contents().strip()
+    if soup.body is None:
+        return ""
+    return soup.body.decode_contents().strip()
 
 
 def filter_html(html: str) -> tuple[str, list[str]]:

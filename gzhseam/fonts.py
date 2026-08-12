@@ -165,7 +165,11 @@ def normalize_fonts(html: str) -> tuple[str, list[str]]:
         if n:
             notes.extend(n)
             tag["style"] = new
-    container = soup.body or soup
+    container = soup.body
+    if container is None:
+        # no <body> (head-only input) — no article content to emit; return
+        # an empty fragment rather than leaking the <html><head> wrapper.
+        return "", notes
     return container.decode_contents().strip(), notes
 
 

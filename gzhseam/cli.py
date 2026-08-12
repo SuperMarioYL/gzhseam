@@ -114,6 +114,20 @@ def wash(deck: Path, output: Path, cdn: bool, verbose: bool) -> None:
     else:
         artifact = _wash_pipeline(text, GzhCtx(upload_cdn=False))
 
+    # v0.4.0 ``fix-wash-silent-success-on-empty-input``: an empty or
+    # whitespace-only deck (or, after the v0.4.0 fragment fix, a head-only
+    # deck whose body-level elements were all DROP_TAGS) washes to an empty
+    # artifact. v0.3.0 used to write the 0-byte file and print a green ``✓``
+    # anyway — the inverse of the clean-failure pattern the non-UTF-8 /
+    # missing-output-dir / init-auth-stub paths already use (each exits 2
+    # with a red ``✗``). Now the empty-output case fails the same way: clean
+    # red ``✗`` + ``sys.exit(2)``, and writes no output file.
+    if not artifact.html or "empty input" in artifact.violations:
+        console.print(
+            f"[red]✗[/red] {deck} 无可洗内容（输入为空、仅空白，或洗后无残留）"
+        )
+        sys.exit(2)
+
     # v0.3.0 ``fix-wash-output-dir-not-created``: ``-o subdir/out.html`` where
     # ``subdir/`` does not exist used to abort with an uncaught
     # ``FileNotFoundError`` traceback mid-run, AFTER the wash already succeeded
