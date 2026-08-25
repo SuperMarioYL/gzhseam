@@ -124,16 +124,23 @@ ALLOWED_STYLE_PROPS: frozenset[str] = frozenset(
 # ---------------------------------------------------------------------------
 
 
-def _attr_allowed(tag_name: str, attr_name: str) -> bool:
+def _attr_allowed(
+    tag_name: str,
+    attr_name: str,
+    allowed_attrs: Mapping[str, frozenset[str]] = ALLOWED_ATTRS,
+) -> bool:
     """Whether ``attr_name`` is allowed on ``tag_name`` per the whitelist."""
     name = attr_name.lower()
     if name.startswith("on"):  # event handlers always stripped
         return False
-    allowed = ALLOWED_ATTRS.get(tag_name, ALLOWED_ATTRS["*"])
+    allowed = allowed_attrs.get(tag_name, allowed_attrs["*"])
     return name in allowed
 
 
-def _filter_attrs(tag: Tag) -> dict[str, str]:
+def _filter_attrs(
+    tag: Tag,
+    allowed_attrs: Mapping[str, frozenset[str]] = ALLOWED_ATTRS,
+) -> dict[str, str]:
     """Return the dict of attributes on ``tag`` that survive the whitelist.
 
     Style values are passed through untouched here; font normalization happens
@@ -142,7 +149,7 @@ def _filter_attrs(tag: Tag) -> dict[str, str]:
     """
     out: dict[str, str] = {}
     for name, value in tag.attrs.items():
-        if _attr_allowed(tag.name, name):
+        if _attr_allowed(tag.name, name, allowed_attrs):
             out[name] = value
     return out
 
@@ -155,8 +162,11 @@ def _filter_attrs(tag: Tag) -> dict[str, str]:
 PARSER_SCAFFOLD_TAGS: frozenset[str] = frozenset({"html", "body", "head"})
 
 
-def _drop_disallowed_tags(soup: BeautifulSoup) -> list[str]:
-    """Walk the tree and remove/unwrap tags per :data:`ALLOWED_TAGS` / :data:`DROP_TAGS`.
+def _drop_disallowed_tags(
+    soup: BeautifulSoup,
+    allowed_tags: frozenset[str] = ALLOWED_TAGS,
+) -> list[str]:
+    """Walk the tree and remove/unwrap tags per ``allowed_tags`` (default :data:`ALLOWED_TAGS`) / :data:`DROP_TAGS`.
 
     Returns the list of violation descriptions (for :class:`GzhArtifact`).
     Dropped-content tags (``script``/``canvas``/``iframe``/...) are removed
@@ -190,20 +200,24 @@ def _drop_disallowed_tags(soup: BeautifulSoup) -> list[str]:
             violations.append(f"dropped <{name}> (platform-incompatible)")
             tag.decompose()
             continue
-        if name not in ALLOWED_TAGS:
+        if name not in allowed_tags:
             violations.append(f"unwrapped <{name}> (not in whitelist)")
             tag.unwrap()
             continue
     return violations
 
 
-def _drop_disallowed_attrs(soup: BeautifulSoup) -> list[str]:
+def _drop_disallowed_attrs(
+    soup: BeautifulSoup,
+    allowed_tags: frozenset[str] = ALLOWED_TAGS,
+    allowed_attrs: Mapping[str, frozenset[str]] = ALLOWED_ATTRS,
+) -> list[str]:
     """Strip non-allowlisted attributes (including all ``on*``) in place."""
     violations: list[str] = []
     for tag in soup.find_all(True):
-        if tag.name not in ALLOWED_TAGS:
+        if tag.name not in allowed_tags:
             continue  # already unwrapped/dropped
-        kept: dict[str, str] = _filter_attrs(tag)
+        kept: dict[str, str] = _filter_attrs(tag, allowed_attrs)
         dropped = [k for k in tag.attrs if k not in kept]
         if dropped:
             violations.append(
@@ -243,8 +257,20 @@ def _serialize_fragment(soup: BeautifulSoup) -> str:
     return soup.body.decode_contents().strip()
 
 
-def filter_html(html: str) -> tuple[str, list[str]]:
+def filter_html(
+    html: str,
+    *,
+    allowed_tags: frozenset[str] = ALLOWED_TAGS,
+    allowed_attrs: Mapping[str, frozenset[str]] = ALLOWED_ATTRS,
+) -> tuple[str, list[str]]:
     """Run the whitelist stage: tag drop/unwrap + attribute strip + comment strip.
+
+    ``allowed_tags`` / ``allowed_attrs`` default to the module-level
+    :data:`ALLOWED_TAGS` / :data:`ALLOWED_ATTRS`, so a bare
+    ``filter_html(html)`` call is unchanged. Pass them to apply a per-call
+    policy (e.g. a stricter enterprise no-``<a>`` allowlist, or a relaxed one
+    once the platform rules loosen) — the overrides *replace* the defaults,
+    they are not merged with them.
 
     Returns ``(washed_html, violations)``. Idempotent: running twice produces
     the same output and zero new violations on the second pass.
@@ -256,9 +282,9 @@ def filter_html(html: str) -> tuple[str, list[str]]:
         return "", ["empty input"]
     soup = BeautifulSoup(html, "lxml")
     violations: list[str] = []
-    violations += _drop_disallowed_tags(soup)
+    violations += _drop_disallowed_tags(soup, allowed_tags)
     violations += _strip_comments(soup)
-    violations += _drop_disallowed_attrs(soup)
+    violations += _drop_disallowed_attrs(soup, allowed_tags, allowed_attrs)
     out = _serialize_fragment(soup)
     return out, violations
 
