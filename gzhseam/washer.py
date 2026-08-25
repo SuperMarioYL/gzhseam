@@ -87,11 +87,15 @@ def wash(
     artifact = GzhArtifact(html="")
 
     # stage 1 — whitelist
-    html, v = whitelist.filter_html(html)
+    html, v = whitelist.filter_html(
+        html,
+        allowed_tags=ctx.whitelisted_tags,
+        allowed_attrs=ctx.allowed_attrs,
+    )
     artifact.violations.extend(v)
 
     # stage 2 — fonts
-    html, n = fonts.normalize_fonts(html)
+    html, n = fonts.normalize_fonts(html, allowed_fonts=ctx.allowed_fonts)
     artifact.notes.extend(n)
 
     # stage 3 — cdn (m2 stub)

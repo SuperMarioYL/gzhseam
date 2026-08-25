@@ -138,6 +138,7 @@ v0.1 是个人免费 OSS——这条 seam 对所有创作者免费。商业延�
 
 <h2><img src="https://api.iconify.design/tabler:history.svg?color=%230071E3&width=24" height="22" align="absmiddle" alt=""> 更新日志</h2>
 
+- **v0.5.0** — wash 配置覆盖修复：`wash()` 此前静默忽略 `GzhCtx.whitelisted_tags` / `allowed_attrs` / `allowed_fonts` 这三个文档承诺的 per-call 覆盖——stage 1/2 只把 html 字符串传给 `whitelist.filter_html` 与 `fonts.normalize_fonts`，二者签名均不接受覆盖参数，永远使用模块级默认白名单/字体集。现在 `filter_html` 与 `fonts.normalize_fonts` 各新增可选参数（默认回退到现有模块常量）并由 `wash()` 透传 ctx 字段；默认行为与既有调用签名不变，但调用者构造 `GzhCtx(whitelisted_tags=更严格集合)`（如企业禁 `<a>`/`<img>` 策略）、放宽集合或自定义字体白名单时不再被静默吞掉。
 - **v0.4.0** — wash 边界硬化：仅含 head 级标签（`<script>`/`<style>`/`<meta>`/`<title>`/`<link>`，均属 DROP_TAGS）的 deck 不再泄漏 `<html><head>` 文档外壳——`_serialize_fragment` 与 `fonts.normalize_fonts` 在 lxml 未生成 `<body>` 时返回空片段，而非回退到整文档；`gzhseam wash` 对空 / 仅空白（或洗后无残留）的输入改为干净失败：红 `✗` + `sys.exit(2)`、不写 0 字节文件，对齐 v0.3.0 的 clean-failure 模式。
 - **v0.3.0** — wash 边界用例的 clean-failure 修复：非 UTF-8 输入、缺失输出目录、`init`/`auth login` 存根不再抛裸 traceback，统一红 `✗` + `sys.exit(2)`。
 

@@ -93,7 +93,10 @@ def _classify_token(tok: str) -> str:
     return "sans"  # safe default for CN article body
 
 
-def _nearest_family(agent_chain: str) -> str:
+def _nearest_family(
+    agent_chain: str,
+    allowed_fonts: frozenset[str] = ALLOWED_FONTS,
+) -> str:
     """Map an agent-emitted ``font-family`` value to a 公众号-allowed chain.
 
     Strategy: keep any allowed token from the agent's chain (preserving order,
@@ -103,7 +106,7 @@ def _nearest_family(agent_chain: str) -> str:
     the mono default rather than collapsing to body sans.
     """
     tokens = [t.strip() for t in agent_chain.split(",") if t.strip()]
-    kept = [t for t in tokens if t.strip("'\"") in ALLOWED_FONTS]
+    kept = [t for t in tokens if t.strip("'\"") in allowed_fonts]
     if kept:
         return ", ".join(kept)
     if not tokens:
@@ -112,7 +115,10 @@ def _nearest_family(agent_chain: str) -> str:
     return ", ".join(BUCKET_DEFAULTS[bucket])
 
 
-def normalize_style(style: str) -> tuple[str, list[str]]:
+def normalize_style(
+    style: str,
+    allowed_fonts: frozenset[str] = ALLOWED_FONTS,
+) -> tuple[str, list[str]]:
     """Normalize one inline ``style`` string.
 
     Returns ``(new_style, notes)``. Re-maps every ``font-family`` declaration
@@ -133,7 +139,7 @@ def normalize_style(style: str) -> tuple[str, list[str]]:
     def _remap_font_family(m: re.Match[str]) -> str:
         prefix, val = m.group(1), m.group(2)
         stripped = val.strip()
-        new = _nearest_family(stripped)
+        new = _nearest_family(stripped, allowed_fonts)
         if new != stripped:
             notes.append(f"font-family: {stripped!r} -> {new!r}")
         return f"{prefix}{new}"
@@ -142,12 +148,20 @@ def normalize_style(style: str) -> tuple[str, list[str]]:
     return new_style, notes
 
 
-def normalize_fonts(html: str) -> tuple[str, list[str]]:
+def normalize_fonts(
+    html: str,
+    *,
+    allowed_fonts: frozenset[str] = ALLOWED_FONTS,
+) -> tuple[str, list[str]]:
     """Run the font stage on an HTML fragment.
 
     Walks every tag with a ``style`` attribute and rewrites each
     ``font-family`` declaration to a 公众号-allowed chain. Idempotent: a
     second pass on already-normalized HTML produces zero notes.
+
+    ``allowed_fonts`` defaults to the module-level :data:`ALLOWED_FONTS`;
+    pass it to admit fonts the default set rejects (or to reject ones it
+    keeps) for a single call, without changing the module constant.
 
     Returns a fragment (no ``<html>/<body>`` wrapper) so this stage is
     safe to chain after :func:`gzhseam.whitelist.filter_html` without
@@ -161,7 +175,7 @@ def normalize_fonts(html: str) -> tuple[str, list[str]]:
         style = tag.get("style")
         if not style:
             continue
-        new, n = normalize_style(style)
+        new, n = normalize_style(style, allowed_fonts)
         if n:
             notes.extend(n)
             tag["style"] = new

@@ -166,6 +166,61 @@ def test_wash_sample_deck_fixture_end_to_end():
     assert art.violations
 
 
+# --- v0.5.0 GzhCtx config-override regressions -----------------------------
+# v0.5.0 fix-wash-ignores-ctx-whitelist-font-config: the GzhCtx docstring
+# (gzhseam/washer.py:29-44) advertises whitelisted_tags / allowed_attrs /
+# allowed_fonts as per-call overrides, but wash() used to pass only the html
+# string to whitelist.filter_html and fonts.normalize_fonts — neither stage
+# accepted an override — so the module-level defaults were always used and a
+# caller's stricter/relaxed policy was silently swallowed. The fix threads
+# the ctx fields through; the tests below assert each override is honored.
+
+
+def test_wash_honors_stricter_ctx_whitelisted_tags():
+    """v0.5.0 fix — a stricter ``ctx.whitelisted_tags`` removes a tag the
+    default whitelist keeps.
+
+    An enterprise no-``<a>`` policy (``whitelisted_tags = ALLOWED_TAGS - {a}``)
+    must unwrap ``<a>`` from the output instead of silently keeping it.
+    Pre-fix the override was swallowed and ``<a>`` survived.
+    """
+    ctx = GzhCtx(whitelisted_tags=whitelist.ALLOWED_TAGS - frozenset({"a"}))
+    art = wash('<section><a href="x">link</a></section>', ctx)
+    assert "<a" not in art.html  # <a> unwrapped, not silently kept
+    assert "link" in art.html  # ...its text content survives the unwrap
+    assert any("unwrapped <a>" in v for v in art.violations)
+
+
+def test_wash_honors_stricter_ctx_allowed_attrs():
+    """v0.5.0 fix — a stricter ``ctx.allowed_attrs`` strips an attribute the
+    default ``"*"`` set keeps.
+
+    Narrowing ``"*"`` to ``{style}`` (dropping ``class``) must strip ``class``
+    from a ``<p>`` while keeping ``style``. Pre-fix the override was swallowed
+    and ``class`` survived.
+    """
+    stricter_attrs = {**whitelist.ALLOWED_ATTRS, "*": frozenset({"style"})}
+    ctx = GzhCtx(allowed_attrs=stricter_attrs)
+    art = wash('<p class="banner" style="color:red">hi</p>', ctx)
+    assert "class=" not in art.html  # stripped per the override
+    assert "style=" in art.html  # still allowed by the override's "*"
+    assert any("stripped attrs" in v for v in art.violations)
+
+
+def test_wash_honors_ctx_allowed_fonts():
+    """v0.5.0 fix — a ``ctx.allowed_fonts`` override admitting a font the
+    default set rejects is honored, not silently swallowed.
+
+    ``allowed_fonts = {Comic Sans}`` must keep ``"Comic Sans"`` verbatim with
+    no rewrite note. Pre-fix the override was swallowed and ``"Comic Sans"``
+    was remapped to the sans bucket default with a note.
+    """
+    ctx = GzhCtx(allowed_fonts=frozenset({"Comic Sans"}))
+    art = wash("<p style=\"font-family: 'Comic Sans'\">hi</p>", ctx)
+    assert "Comic Sans" in art.html  # kept verbatim, not remapped
+    assert art.notes == []  # no rewrite recorded
+
+
 # --- m2/m3 stubs (contract preserved) --------------------------------------
 
 
