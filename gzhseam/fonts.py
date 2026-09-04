@@ -65,16 +65,28 @@ SANS_HINTS: tuple[str, ...] = ("sans", "pingfang", "yahei", "heiti", "helvetica"
 MONO_HINTS: tuple[str, ...] = ("mono", "menlo", "monaco", "consolas", "courier", "fira code", "jetbrains", "operator mono", "source code", "ui-monospace", "sf mono")
 
 
-#: Matches a single ``font-family`` declaration, capturing (1) the
-#: ``font-family\s*:\s*`` prefix (so the original spacing around the colon is
-#: preserved verbatim on splice-back) and (2) the value up to the next ``;``
-#: or end-of-string. ``font-family`` values never legitimately contain ``;``
-#: (CSS uses ``,`` to separate family names, not ``;``), so ``[^;]+`` is safe
-#: here — unlike a whole-style ``;``-splitting regex, which would corrupt
-#: ``;``-bearing values like data-URL ``background`` or quoted ``content``
-#: strings co-occurring with a font-family remap.
+#: Matches a single ``font-family`` *declaration* — and ONLY a real
+#: declaration, not the literal ``font-family:`` text that may appear inside a
+#: quoted CSS value (e.g. ``content: "font-family: bar"``). v0.6.0
+#: ``fix-font-family-regex-matches-inside-quoted-css-values``: the v0.2.0 regex
+#: ``(font-family\s*:\s*)([^;]+)`` matched ``font-family:`` ANYWHERE in the
+#: style string, so a font-family token inside a quoted ``content`` value
+#: co-occurring with a real font-family remap was also matched; ``[^;]+`` then
+#: ate the content value's closing quote and the replacement dropped it, leaving
+#: the string unclosed and swallowing every subsequent declaration into it. The
+#: leading ``(?:^|;)\s*`` group now anchors the match to a declaration boundary
+#: (start-of-string or after a ``;``), so a ``font-family:`` whose preceding
+#: character is a quote is never matched. Capture groups: (1) the leading
+#: separator (``""`` at start-of-string, or ``";"`` + whitespace — preserved
+#: verbatim on splice-back so the ``;`` is not lost), (2) the
+#: ``font-family\s*:\s*`` prefix (original spacing around the colon preserved),
+#: (3) the value up to the next ``;`` or end-of-string. ``font-family`` values
+#: never legitimately contain ``;`` (CSS uses ``,`` to separate family names,
+#: not ``;``), so ``[^;]+`` is safe here — and a ``;`` inside a data-URL
+#: ``background`` value is never at a font-family declaration boundary, so the
+#: v0.2.0 data-URL fix is not regressed.
 _FONT_FAMILY_RE = re.compile(
-    r"(font-family\s*:\s*)([^;]+)", re.IGNORECASE
+    r"((?:^|;)\s*)(font-family\s*:\s*)([^;]+)", re.IGNORECASE
 )
 
 
@@ -129,6 +141,13 @@ def normalize_style(
     survive a co-occurring font-family remap intact. The CSS property
     whitelist is enforced by :mod:`gzhseam.whitelist`.
 
+    v0.6.0 ``fix-font-family-regex-matches-inside-quoted-css-values``: the
+    font-family regex is anchored to a declaration boundary
+    (start-of-string or after a ``;``), so the literal ``font-family:`` text
+    inside a quoted value (e.g. ``content: "font-family: bar"``) is never
+    matched — only real ``font-family`` declarations are remapped. The CSS
+    property whitelist is enforced by :mod:`gzhseam.whitelist`.
+
     Idempotent: a second pass on already-normalized HTML produces zero notes,
     because a remapped chain consists solely of allowed tokens.
     """
@@ -137,12 +156,12 @@ def normalize_style(
     notes: list[str] = []
 
     def _remap_font_family(m: re.Match[str]) -> str:
-        prefix, val = m.group(1), m.group(2)
+        lead, prefix, val = m.group(1), m.group(2), m.group(3)
         stripped = val.strip()
         new = _nearest_family(stripped, allowed_fonts)
         if new != stripped:
             notes.append(f"font-family: {stripped!r} -> {new!r}")
-        return f"{prefix}{new}"
+        return f"{lead}{prefix}{new}"
 
     new_style = _FONT_FAMILY_RE.sub(_remap_font_family, style)
     return new_style, notes

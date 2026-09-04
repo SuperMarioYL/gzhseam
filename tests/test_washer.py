@@ -104,6 +104,73 @@ def test_normalize_style_preserves_data_url_with_semicolon_in_value():
     assert "font-size: 14px" in new
 
 
+def test_normalize_style_does_not_remap_font_family_inside_quoted_values():
+    """Regression for v0.6.0 ``fix-font-family-regex-matches-inside-quoted-css-values``.
+
+    The v0.2.0 ``_FONT_FAMILY_RE`` matched ``font-family:`` ANYWHERE in the
+    style string, including inside a quoted CSS ``content`` value. When such an
+    in-quote font-family co-occurred with a real font-family remap on the same
+    element, ``[^;]+`` ate the content value's closing quote and the
+    replacement dropped it — leaving the content string unclosed and swallowing
+    every subsequent declaration into it, so the whole inline style was
+    structurally broken (not merely one font name rewritten). The v0.6.0 fix
+    anchors the regex to a declaration boundary (start-of-string or after a
+    ``;``), so a ``font-family:`` whose preceding character is a quote is never
+    matched.
+
+    Pre-fix this input produced TWO rewrite notes (the real declaration AND the
+    in-quote text) and the content string's closing quote vanished; post-fix it
+    produces ONE note (the real declaration only) and the quoted content string
+    + the subsequent ``color: red`` declaration survive verbatim.
+    """
+    src = (
+        "font-family: 'Fira Code'; "
+        "content: 'font-family: bar'; "
+        "color: red"
+    )
+    new, notes = fonts.normalize_style(src)
+    # the REAL font-family was remapped ('Fira Code' is not allowed -> mono)
+    assert "Fira Code" not in new
+    assert "monospace" in new
+    # exactly ONE rewrite — the in-quote 'font-family: bar' was NOT matched
+    # (pre-fix it was also remapped, producing a second spurious note)
+    assert len(notes) == 1
+    # the quoted content string survived verbatim, closing quote intact
+    # (pre-fix the closing quote was eaten and 'bar' was rewritten to a sans
+    # bucket chain, corrupting the string)
+    assert "content: 'font-family: bar'" in new
+    # the subsequent declaration survives as a real top-level declaration,
+    # not swallowed into an unclosed content string
+    assert new.endswith("color: red")
+    # idempotent: a second pass produces no further notes (the remapped mono
+    # chain is all-allowed, and the in-quote text is still not matched)
+    _, notes2 = fonts.normalize_style(new)
+    assert notes2 == []
+
+
+def test_wash_does_not_corrupt_content_string_with_font_family_text():
+    """v0.6.0 end-to-end pipeline regression for
+    ``fix-font-family-regex-matches-inside-quoted-css-values``.
+
+    Exercises the fix through the full wash pipeline (whitelist + fonts), not
+    just ``normalize_style`` in isolation. An element carrying both a
+    non-allowed ``font-family`` AND a ``content`` value whose text contains
+    ``font-family:`` must wash with the real font remapped and the quoted
+    content string (plus the adjacent ``color`` declaration) intact.
+    """
+    src = "<p style=\"font-family: 'Fira Code'; content: 'font-family: bar'; color: red\">x</p>"
+    art = wash(src)
+    # real font remapped
+    assert "Fira Code" not in art.html
+    assert "monospace" in art.html
+    # the quoted content string survived verbatim, closing quote intact
+    assert "content: 'font-family: bar'" in art.html
+    # the adjacent color declaration survived as a real declaration
+    assert "color: red" in art.html
+    # only the real font-family was reported as a rewrite note
+    assert sum("font-family" in n for n in art.notes) == 1
+
+
 # --- pipeline (m1 path) ----------------------------------------------------
 
 
