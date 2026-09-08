@@ -104,6 +104,10 @@
           "alt": {
             "zh": "真实 CLI 清洗完整 HTML fixture，随后读回产物并检查二次处理与自定义白名单。没有上传图片、登录公众号或验证编辑器粘贴效果。",
             "en": "The real CLI transforms a complete HTML fixture, followed by output readback, a second pass and a custom whitelist. No images are uploaded, no WeChat login occurs, and editor paste behavior is not tested."
+          },
+          "mobile": {
+            "light": "/assets/presentation/process-mobile-light.svg",
+            "dark": "/assets/presentation/process-mobile-dark.svg"
           }
         }
       },
@@ -122,6 +126,10 @@
           "alt": {
             "zh": "washer.py 依次调用 whitelist.filter_html 与 fonts.normalize_fonts。前者删除指定标签、展开非白名单容器并剥离属性，后者整理 inline font-family。GzhCtx 的 per-call 覆盖在 v0.5.0 已透传。CDN 阶段仍为 stub。",
             "en": "washer.py calls whitelist.filter_html and then fonts.normalize_fonts. The first drops selected tags, unwraps unsupported containers and strips attributes; the second normalizes inline font-family. v0.5.0 forwards per-call GzhCtx overrides. The CDN stage remains a stub."
+          },
+          "mobile": {
+            "light": "/assets/presentation/architecture-mobile-light.svg",
+            "dark": "/assets/presentation/architecture-mobile-dark.svg"
           }
         }
       },
@@ -140,6 +148,10 @@
           "alt": {
             "zh": "工具整理 HTML，不生成文章、不替平台审核，也不自动发布。CLI 的成功信息表示本地转换写入完成，不能直接当作公众号兼容性验收。",
             "en": "The tool prepares HTML; it does not generate articles, perform platform review or publish automatically. A successful CLI message means the local transform was written, not that WeChat compatibility was accepted."
+          },
+          "mobile": {
+            "light": "/assets/presentation/integrations-mobile-light.svg",
+            "dark": "/assets/presentation/integrations-mobile-dark.svg"
           }
         }
       }
