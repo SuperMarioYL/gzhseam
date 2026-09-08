@@ -1,0 +1,90 @@
+{
+  "name": "GzhSeam",
+  "tagline": "Transform HTML with explicit tag and font rules.",
+  "architecture": {
+    "title": "HTML input through ordered local transforms",
+    "nodes": [
+      {
+        "title": "HTML input",
+        "detail": "UTF-8 document or fragment"
+      },
+      {
+        "title": "Tag and attribute rules",
+        "detail": "Drop / unwrap / strip"
+      },
+      {
+        "title": "Font normalization",
+        "detail": "Inline family mapping"
+      },
+      {
+        "title": "GzhArtifact",
+        "detail": "HTML + violations + notes"
+      },
+      {
+        "title": "CLI output",
+        "detail": "File and diagnostics"
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ]
+  },
+  "process": {
+    "title": "Wash the complete local fixture",
+    "steps": [
+      {
+        "title": "Read HTML",
+        "detail": "Script, event and custom font"
+      },
+      {
+        "title": "Apply rules",
+        "detail": "Remove unsupported structures"
+      },
+      {
+        "title": "Read back",
+        "detail": "Idempotence and ctx override"
+      }
+    ],
+    "result": "The local fixture is transformed and rechecked; no image upload or platform submission occurs."
+  },
+  "integrations": {
+    "title": "Local article-preparation interfaces",
+    "items": [
+      {
+        "title": "HTML file",
+        "detail": "UTF-8 input"
+      },
+      {
+        "title": "CLI wash",
+        "detail": "Output file + verbose notes"
+      },
+      {
+        "title": "Python wash",
+        "detail": "GzhCtx per-call overrides"
+      },
+      {
+        "title": "Font rules",
+        "detail": "Sans / serif / mono fallback"
+      },
+      {
+        "title": "Editable fragment",
+        "detail": "Local HTML output"
+      }
+    ]
+  }
+}

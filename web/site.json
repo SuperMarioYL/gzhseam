@@ -1,67 +1,244 @@
 {
-  "schema": 1,
-  "name": "gzhseam",
+  "schema": 3,
+  "name": "GzhSeam",
   "github": "https://github.com/SuperMarioYL/gzhseam",
   "host": "gzhseam.lei6393.com",
-  "lang": { "primary": "zh", "toggle": true },
-  "accent": ["#0071E3", "#34A0FF", "#5AC8FA"],
+  "palette": "auto",
+  "lang": {
+    "primary": "zh",
+    "toggle": true
+  },
+  "meta": {
+    "visual_profile": "neon-particle",
+    "content_version": "0.5.0",
+    "demo_source": "docs/demo-results.json"
+  },
   "hero": {
-    "eyebrow": { "zh": "本地 · 无账号 · 一条命令", "en": "Local · No account · One command" },
+    "eyebrow": {
+      "zh": "按明确的标签、属性和字体规则转换 HTML，输出可继续编辑的文章片段与诊断信息。",
+      "en": "Transform HTML with explicit tag, attribute and font rules, producing an editable article fragment with diagnostics."
+    },
     "headline": {
-      "zh": "把 coding agent 出的 HTML\n洗成公众号能接住的可编辑 HTML",
-      "en": "Wash coding-agent HTML into\n公众号-editor-pasteable, in-place-editable HTML"
+      "zh": "把 HTML 整理好，\n再交给文章编辑器",
+      "en": "Prepare the HTML.\nThen review it in the editor."
     },
     "sub": {
-      "zh": "不用回 agent 改一个字 —— 贴进公众号编辑器就地改；带 noscript / video / template / form 的 deck 也洗得过去，空了、怪了也不装成功。",
-      "en": "No re-running the agent to tweak one word — paste and edit in place in the 公众号 editor; decks with noscript / video / template / form wash clean too, and empty or weird input never fakes a green ✓."
+      "zh": "按明确的标签、属性和字体规则转换 HTML，输出可继续编辑的文章片段与诊断信息。",
+      "en": "Transform HTML with explicit tag, attribute and font rules, producing an editable article fragment with diagnostics."
     },
-    "command": "gzhseam wash deck.html -o gzh-ready.html",
-    "cta": { "zh": "一条命令洗好", "en": "Wash it in one command" },
-    "ctaGithub": { "zh": "看源码", "en": "View source" },
-    "scroll": { "zh": "往下看怎么接的缝", "en": "See how the seam fits" }
+    "href": "#quickstart",
+    "cta": {
+      "zh": "运行示例",
+      "en": "Run the example"
+    },
+    "ctaGithub": {
+      "zh": "查看源码",
+      "en": "View source"
+    }
+  },
+  "scene": {
+    "kind": "neon-graph",
+    "caption": {
+      "zh": "HTML 树变换 · 本地诊断",
+      "en": "HTML TREE TRANSFORMS · LOCAL DIAGNOSTICS"
+    },
+    "fallback": "/assets/presentation/scene-dark.svg",
+    "fallbackLight": "/assets/presentation/scene-light.svg"
   },
   "advantages": [
     {
-      "title": { "zh": "带 noscript / video / template / form 的 deck，也洗得过去", "en": "Decks with noscript / video / template / form wash clean too" },
-      "body": {
-        "zh": "以前只要 deck 里带了 noscript、video、template 或 form 这几类标签，洗到一半就崩 —— 抛错退出，一个字的输出都不留，整篇 deck 洗不了。现在这几类标签都洗得干净：平台不收的外壳剥掉，该留的正文照留，每次都能拿到一份能贴的输出。",
-        "en": "If a deck carried noscript, video, template, or form tags, the wash used to die mid-run — a traceback, zero output, the whole deck unwashable. Now those tags wash clean: the platform-incompatible shell is stripped, the visible body survives, and you get a pasteable file every time."
+      "title": {
+        "zh": "按顺序变换",
+        "en": "Apply ordered transforms"
       },
-      "chips": ["› noscript / video / template / form 都洗得过去", "› 不再中途崩、不出空文件", "› 剥外壳、留正文"]
+      "body": {
+        "zh": "先处理标签和属性，再整理字体。",
+        "en": "Process tags and attributes before normalizing fonts."
+      }
     },
     {
-      "title": { "zh": "改字体的时候，背景图和 CSS 不再被顺手截断", "en": "Remapping fonts no longer truncates your backgrounds and CSS" },
-      "body": {
-        "zh": "如果一个元素同时挂了非白名单字体和 data-URL 背景图，以前改字体会顺手把背景图的 url( 截断、把后面的 CSS 全丢掉 —— 贴进去背景图就没了。现在改字体只动 font-family 这一句，其余样式原样保留，data-URL 背景图和相邻 CSS 都完整过缝。",
-        "en": "If one element carried both a non-allowed coding font and a data-URL background, the font remap used to slice the url( open, truncate the data URL, and drop every CSS declaration after it — your background vanished on paste. Now the remap touches only font-family and leaves the rest of the style verbatim, so data-URL backgrounds and adjacent CSS survive intact."
+      "title": {
+        "zh": "保留诊断",
+        "en": "Retain diagnostics"
       },
-      "chips": ["› data-URL 背景图不再被截断", "› 改字体不伤其他 CSS", "› 样式原样保留"]
+      "body": {
+        "zh": "删除、展开和字体替换均可查看。",
+        "en": "Inspect removals, unwrapping and font replacements."
+      }
     },
     {
-      "title": { "zh": "撞到问题，一条命令打开 issues 提反馈", "en": "Hit a snag? One command opens issues to file feedback" },
-      "body": {
-        "zh": "clone 下来用，撞到问题想报，以前得自己翻 issues 地址、想该写什么。现在跑 gzhseam feedback，浏览器直接打开项目 issues 页，预填模板要你填的全是关键字段 —— 版本、系统、那段输入 HTML、你跑的命令、期望和实际差在哪 —— 一分钟提一个高信号 issue。",
-        "en": "You cloned it, hit a snag, and filing meant digging for the issues URL and guessing what to include. Now run gzhseam feedback — your browser opens the project issues page, and the prefilled templates ask for exactly the fields that make a high-signal report: version, OS, the input HTML, the command you ran, what you saw vs expected. File a useful bug in under a minute."
+      "title": {
+        "zh": "逐次覆盖规则",
+        "en": "Override rules per call"
       },
-      "chips": ["› 一条命令打开 issues", "› 预填模板要的全是关键字段", "› 一分钟提一个高信号 issue"]
-    },
-    {
-      "title": { "zh": "空了就告诉你空了 —— 不再泄外壳、不再装成功", "en": "Washes to nothing? It says so — no wrapper leak, no fake success" },
       "body": {
-        "zh": "喂一份只剩 head 级标签（script / style / meta / title / link）的 deck，以前洗完会留一坨空的 <html><head></head></html> 外壳 —— 贴进去就是没用的脚手架；喂一份空的或纯空白的 deck，还会写一个 0 字节文件、打绿勾 —— 你以为洗好了，一贴啥也没有。现在这两种都老实了：只剩 head 标签的洗完是空片段、不带外壳；空的或洗后无残留的直接红 ✗ 退出、不写空文件。非 UTF-8 的 deck、-o 指到不存在的目录、手滑跑了 init / auth login，也统一是这条干净的红字 —— 告诉你卡在哪、该怎么往下走，不再被一坨报错栈吓住。",
-        "en": "Feed a deck that's only head-level tags (script / style / meta / title / link) and the wash used to leave the empty <html><head></head></html> wrapper in the output — useless scaffolding you'd paste. Feed an empty or whitespace-only deck and it wrote a 0-byte file with a green ✓ — looked done, pasted nothing. Now both are honest: a head-only deck washes to an empty fragment with no wrapper, and an empty or fully-stripped deck fails cleanly with a red ✗ and writes no file. A non-UTF-8 deck, an -o pointing at a directory that doesn't exist yet, or an accidental init / auth login all get the same clean red line — telling you where it's stuck and how to move on, instead of a wall of traceback."
-      },
-      "chips": ["› 只剩 head 标签的 deck 不再泄外壳", "› 空输入红 ✗ 退出、不写空文件", "› 非 UTF-8 / 缺目录 / init-auth 都是一条红字"]
+        "zh": "GzhCtx 让调用方选择自己的允许集合。",
+        "en": "GzhCtx lets callers select their allowed sets."
+      }
     }
   ],
-  "scene": { "kind": "hub-nodes", "nodes": ["Claude Code", "公众号编辑器"] },
-  "cta": {
-    "headline": { "zh": "agent 把生成做便宜了，瓶颈在贴进去这层缝", "en": "Agents made generation cheap — the bottleneck is the paste seam" },
-    "sub": {
-      "zh": "GzhSeam 接的就是这层缝。一条命令，deck.html → 公众号能接住的可编辑 HTML；撞到问题就 gzhseam feedback。",
-      "en": "GzhSeam fits exactly that seam. One command: deck.html → 公众号-pasteable, editable HTML; hit a snag and gzhseam feedback opens issues."
+  "story": {
+    "intro": {
+      "title": {
+        "zh": "把格式整理拆成可检查步骤",
+        "en": "Make format preparation inspectable"
+      },
+      "body": {
+        "zh": "生成的 HTML 往往含脚本、嵌入内容和自定义字体，复制到文章编辑器后可能变化。GzhSeam 先按仓库规则做本地变换，报告删除和字体映射，让作者查看产物再交给目标平台。",
+        "en": "Generated HTML can contain scripts, embeds and custom fonts that change when pasted into an article editor. GzhSeam applies repository-defined transforms locally and reports removals and font mapping so authors can inspect the result before using a target platform."
+      }
     },
-    "button": { "zh": "看源码", "en": "View on GitHub" }
+    "sections": [
+      {
+        "title": {
+          "zh": "从输入到结果",
+          "en": "From input to result"
+        },
+        "body": {
+          "zh": "真实 CLI 清洗完整 HTML fixture，随后读回产物并检查二次处理与自定义白名单。没有上传图片、登录公众号或验证编辑器粘贴效果。",
+          "en": "The real CLI transforms a complete HTML fixture, followed by output readback, a second pass and a custom whitelist. No images are uploaded, no WeChat login occurs, and editor paste behavior is not tested."
+        },
+        "image": {
+          "light": "/assets/presentation/process-light.svg",
+          "dark": "/assets/presentation/process-dark.svg",
+          "alt": {
+            "zh": "真实 CLI 清洗完整 HTML fixture，随后读回产物并检查二次处理与自定义白名单。没有上传图片、登录公众号或验证编辑器粘贴效果。",
+            "en": "The real CLI transforms a complete HTML fixture, followed by output readback, a second pass and a custom whitelist. No images are uploaded, no WeChat login occurs, and editor paste behavior is not tested."
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "工作原理",
+          "en": "How it works"
+        },
+        "body": {
+          "zh": "washer.py 依次调用 whitelist.filter_html 与 fonts.normalize_fonts。前者删除指定标签、展开非白名单容器并剥离属性，后者整理 inline font-family。GzhCtx 的 per-call 覆盖在 v0.5.0 已透传。CDN 阶段仍为 stub。",
+          "en": "washer.py calls whitelist.filter_html and then fonts.normalize_fonts. The first drops selected tags, unwraps unsupported containers and strips attributes; the second normalizes inline font-family. v0.5.0 forwards per-call GzhCtx overrides. The CDN stage remains a stub."
+        },
+        "image": {
+          "light": "/assets/presentation/architecture-light.svg",
+          "dark": "/assets/presentation/architecture-dark.svg",
+          "alt": {
+            "zh": "washer.py 依次调用 whitelist.filter_html 与 fonts.normalize_fonts。前者删除指定标签、展开非白名单容器并剥离属性，后者整理 inline font-family。GzhCtx 的 per-call 覆盖在 v0.5.0 已透传。CDN 阶段仍为 stub。",
+            "en": "washer.py calls whitelist.filter_html and then fonts.normalize_fonts. The first drops selected tags, unwraps unsupported containers and strips attributes; the second normalizes inline font-family. v0.5.0 forwards per-call GzhCtx overrides. The CDN stage remains a stub."
+          }
+        }
+      },
+      {
+        "title": {
+          "zh": "能力与接入",
+          "en": "Capabilities and integration"
+        },
+        "body": {
+          "zh": "工具整理 HTML，不生成文章、不替平台审核，也不自动发布。CLI 的成功信息表示本地转换写入完成，不能直接当作公众号兼容性验收。",
+          "en": "The tool prepares HTML; it does not generate articles, perform platform review or publish automatically. A successful CLI message means the local transform was written, not that WeChat compatibility was accepted."
+        },
+        "image": {
+          "light": "/assets/presentation/integrations-light.svg",
+          "dark": "/assets/presentation/integrations-dark.svg",
+          "alt": {
+            "zh": "工具整理 HTML，不生成文章、不替平台审核，也不自动发布。CLI 的成功信息表示本地转换写入完成，不能直接当作公众号兼容性验收。",
+            "en": "The tool prepares HTML; it does not generate articles, perform platform review or publish automatically. A successful CLI message means the local transform was written, not that WeChat compatibility was accepted."
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "zh": "CDN 边界",
+          "en": "CDN boundary"
+        },
+        "body": {
+          "zh": "当前 --cdn 返回未实现错误；默认 wash 只在本地处理。",
+          "en": "--cdn currently returns an unimplemented error; default wash stays local."
+        }
+      }
+    ]
   },
-  "footer": { "tag": { "zh": "MIT 开源 · 一条命令的缝", "en": "MIT open source · a one-command seam" } }
+  "demo": {
+    "title": {
+      "zh": "实际运行结果",
+      "en": "Actual demo output"
+    },
+    "note": {
+      "zh": "真实 CLI 清洗完整 HTML fixture，随后读回产物并检查二次处理与自定义白名单。没有上传图片、登录公众号或验证编辑器粘贴效果。",
+      "en": "The real CLI transforms a complete HTML fixture, followed by output readback, a second pass and a custom whitelist. No images are uploaded, no WeChat login occurs, and editor paste behavior is not tested."
+    },
+    "source": "https://github.com/SuperMarioYL/gzhseam/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": {
+          "zh": "执行本地 wash",
+          "en": "Run local wash"
+        },
+        "body": {
+          "zh": "查看标签、属性和字体的实际诊断。",
+          "en": "Inspect the actual tag, attribute and font diagnostics."
+        },
+        "command": "python -m gzhseam.cli wash examples/presentation-input.html -o examples/presentation-output.html --verbose",
+        "output": "→ 解析 HTML (1 个 deck, 1 张图)\n→ 过滤标签白名单 (移除 <script>, <canvas>, on* 事件)\n→ 字体规整 (font-family → 公众号允许集)\n✓ examples/presentation-output.html 已生成（纯本地洗，可直接贴入公众号编辑器就地改一个字）\n  ! unwrapped <article> (not in whitelist)\n  ! dropped <script> (platform-incompatible)\n  ! unwrapped <custom-note> (not in whitelist)\n  · font-family: \"'Fira Code', monospace\" -> 'monospace'\n",
+        "image": "/assets/presentation/demo-0-light.svg",
+        "imageDark": "/assets/presentation/demo-0-dark.svg"
+      },
+      {
+        "label": {
+          "zh": "读回与覆盖",
+          "en": "Read back and override"
+        },
+        "body": {
+          "zh": "检查二次处理相等，并演示只允许 p 标签。",
+          "en": "Check second-pass equality and demonstrate allowing only p tags."
+        },
+        "command": "python examples/presentation_inspect.py",
+        "output": "{\n  \"html\": \"<h1 style=\\\"font-family: monospace;\\\">Local article</h1><p>Keep this text.</p><img alt=\\\"illustrative remote image\\\" src=\\\"https://example.invalid/picture.png\\\"/>\",\n  \"second_pass_same\": true,\n  \"restricted_html\": \"<p>Paragraph</p>Link text\"\n}\n",
+        "image": "/assets/presentation/demo-1-light.svg",
+        "imageDark": "/assets/presentation/demo-1-dark.svg"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "zh": "从完整输入开始",
+      "en": "Start with complete input"
+    },
+    "body": {
+      "zh": "需要 Python 3.12+。本地 wash 不需要公众号凭据，也不会下载示例中的远程图片。",
+      "en": "Requires Python 3.12+. Local wash needs no WeChat credentials and does not download the fixture’s remote image."
+    },
+    "steps": [
+      {
+        "title": {
+          "zh": "安装",
+          "en": "Install"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/gzhseam.git\ncd gzhseam\npython3 -m venv .venv\nsource .venv/bin/activate\npython -m pip install -e ."
+      },
+      {
+        "title": {
+          "zh": "运行自带示例",
+          "en": "Run the supplied example"
+        },
+        "code": "python -m gzhseam.cli wash examples/presentation-input.html -o examples/presentation-output.html --verbose\npython examples/presentation_inspect.py"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "zh": "规则来自仓库，未实时验证目标平台当前粘贴行为。",
+      "en": "Rules come from the repository and were not checked against current platform paste behavior."
+    },
+    {
+      "zh": "CDN、认证与自动发布不在已实现路径中。",
+      "en": "CDN upload, authentication and automatic publication are not implemented paths."
+    },
+    {
+      "zh": "HTML 规则转换不是通用安全证明或完整浏览器沙箱。",
+      "en": "HTML rule transformation is not a general security proof or browser sandbox."
+    }
+  ],
+  "footer": {
+    "tag": "0.5.0 · Python 3.12+ · MIT"
+  }
 }
