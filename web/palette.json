@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "e65956-e7af6a-f6acc6-42f962ac2f9e",
+  "identity": "https://github.com/supermarioyl/gzhseam",
+  "primary": "#e65956",
+  "secondary": "#e7af6a",
+  "highlight": "#f6acc6",
+  "dark": {
+    "bg": "#0a070d",
+    "panel": "#131017",
+    "code": "#140d13",
+    "ink": "#fdeef4",
+    "muted": "#b29da8",
+    "line": "#3a191d",
+    "primary": "#e65956",
+    "secondary": "#e7af6a",
+    "highlight": "#f6acc6",
+    "accent": "#e65956",
+    "buttonStart": "#c84e4b",
+    "buttonEnd": "#947044",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#fef9f9",
+    "panel": "#fef7f7",
+    "code": "#fdf3f3",
+    "ink": "#27161c",
+    "muted": "#725f6b",
+    "line": "#f7cccb",
+    "primary": "#bf4a47",
+    "secondary": "#8d6a41",
+    "highlight": "#906474",
+    "accent": "#bf4a47",
+    "buttonStart": "#c84e4b",
+    "buttonEnd": "#947044",
+    "buttonText": "#ffffff"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "version": "0.5.0",
+  "scope": "Offline HTML allowlist/font transformation, idempotence readback and a per-call whitelist override. No image upload, WeChat login or editor acceptance test.",
+  "inputs": [
+    {
+      "path": "examples/presentation-input.html",
+      "sha256": "74e1be2001c589bb29a5576e6e5e6085ab5d4b4eaf26b4a7f34782305814fc09"
+    },
+    {
+      "path": "examples/presentation_inspect.py",
+      "sha256": "7439cd665fe6b316bed93216a576d62c850d4572db18389e3f495cb6ad87829d"
+    }
+  ],
+  "steps": [
+    {
+      "command": "python -m gzhseam.cli wash examples/presentation-input.html -o examples/presentation-output.html --verbose",
+      "output": "→ 解析 HTML (1 个 deck, 1 张图)\n→ 过滤标签白名单 (移除 <script>, <canvas>, on* 事件)\n→ 字体规整 (font-family → 公众号允许集)\n✓ examples/presentation-output.html 已生成（纯本地洗，可直接贴入公众号编辑器就地改一个字）\n  ! unwrapped <article> (not in whitelist)\n  ! dropped <script> (platform-incompatible)\n  ! unwrapped <custom-note> (not in whitelist)\n  · font-family: \"'Fira Code', monospace\" -> 'monospace'\n",
+      "exit_code": 0
+    },
+    {
+      "command": "python examples/presentation_inspect.py",
+      "output": "{\n  \"html\": \"<h1 style=\\\"font-family: monospace;\\\">Local article</h1><p>Keep this text.</p><img alt=\\\"illustrative remote image\\\" src=\\\"https://example.invalid/picture.png\\\"/>\",\n  \"second_pass_same\": true,\n  \"restricted_html\": \"<p>Paragraph</p>Link text\"\n}\n",
+      "exit_code": 0
+    }
+  ]
+}
