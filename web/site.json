@@ -10,7 +10,7 @@
   },
   "meta": {
     "visual_profile": "neon-particle",
-    "content_version": "0.5.0",
+    "content_version": "0.7.0",
     "demo_source": "docs/demo-results.json"
   },
   "hero": {
@@ -166,6 +166,16 @@
           "zh": "当前 --cdn 返回未实现错误；默认 wash 只在本地处理。",
           "en": "--cdn currently returns an unimplemented error; default wash stays local."
         }
+      },
+      {
+        "title": {
+          "zh": "覆盖规则更稳",
+          "en": "Safer per-call overrides"
+        },
+        "body": {
+          "zh": "v0.7.0 起，不带 \"*\" 键的 allowed_attrs 覆盖不再崩溃：未列出的标签按白名单语义剥离全部属性并在诊断中报告；字体规整也不会再匹配引号内的伪声明。",
+          "en": "Since v0.7.0, an allowed_attrs override without a \"*\" key no longer crashes: tags the mapping does not name have all attributes stripped (reported in diagnostics), and font normalization never matches pseudo-declarations inside quoted CSS values."
+        }
       }
     ]
   },
@@ -251,6 +261,6 @@
     }
   ],
   "footer": {
-    "tag": "0.5.0 · Python 3.12+ · MIT"
+    "tag": "0.7.0 · Python 3.12+ · MIT"
   }
 }
