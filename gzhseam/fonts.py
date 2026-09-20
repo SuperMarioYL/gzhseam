@@ -127,6 +127,45 @@ def _nearest_family(
     return ", ".join(BUCKET_DEFAULTS[bucket])
 
 
+def _quote_mask(style: str) -> list[bool]:
+    """Per-character mask: True while inside a quoted CSS value (``'...'``/``"..."``).
+
+    v0.7.0 ``fix-font-family-remap-still-matches-inside-quoted-values``: the
+    v0.6.0 declaration-boundary anchor ``(?:^|;)`` treats every literal ``;``
+    as a boundary — including a ``;`` that sits INSIDE a quoted CSS value
+    (e.g. ``content: 'step 1; font-family: bar'``). A match starting there
+    made ``[^;]+`` eat the value's closing quote and structurally break the
+    whole style. The mask lets the replacement callback leave any match whose
+    start position is inside a quoted value verbatim, so only real
+    out-of-quote declaration boundaries are remapped.
+
+    One pass, honoring backslash escapes, and only ever closing on the quote
+    character that opened the string — so an apostrophe inside a double-quoted
+    value (``content: "it's fine"``) does not close it.
+    """
+    mask = [False] * len(style)
+    quote: str | None = None
+    i = 0
+    n = len(style)
+    while i < n:
+        ch = style[i]
+        if quote is not None:
+            mask[i] = True
+            if ch == "\\" and i + 1 < n:
+                mask[i + 1] = True
+                i += 2
+                continue
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch == "'" or ch == '"':
+            quote = ch
+            mask[i] = True
+        i += 1
+    return mask
+
+
 def normalize_style(
     style: str,
     allowed_fonts: frozenset[str] = ALLOWED_FONTS,
@@ -145,8 +184,15 @@ def normalize_style(
     font-family regex is anchored to a declaration boundary
     (start-of-string or after a ``;``), so the literal ``font-family:`` text
     inside a quoted value (e.g. ``content: "font-family: bar"``) is never
-    matched — only real ``font-family`` declarations are remapped. The CSS
-    property whitelist is enforced by :mod:`gzhseam.whitelist`.
+    matched — only real ``font-family`` declarations are remapped.
+
+    v0.7.0 ``fix-font-family-remap-still-matches-inside-quoted-values``: the
+    boundary anchor alone still matched at a ``;`` INSIDE a quoted value
+    (e.g. ``content: 'step 1; font-family: bar'``), eating the value's closing
+    quote and structurally breaking the whole style. A per-character in-quote
+    mask (:func:`_quote_mask`) now leaves any match starting inside a quoted
+    value verbatim. The CSS property whitelist is enforced by
+    :mod:`gzhseam.whitelist`.
 
     Idempotent: a second pass on already-normalized HTML produces zero notes,
     because a remapped chain consists solely of allowed tokens.
@@ -155,7 +201,15 @@ def normalize_style(
         return "", []
     notes: list[str] = []
 
+    mask = _quote_mask(style)
+
     def _remap_font_family(m: re.Match[str]) -> str:
+        if mask[m.start()]:
+            # v0.7.0: the match starts inside a quoted CSS value (e.g. the
+            # ";" of `content: 'step 1; font-family: bar'`) — not a real
+            # declaration boundary. Leave the match verbatim so the value's
+            # closing quote and every subsequent declaration survive.
+            return m.group(0)
         lead, prefix, val = m.group(1), m.group(2), m.group(3)
         stripped = val.strip()
         new = _nearest_family(stripped, allowed_fonts)

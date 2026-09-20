@@ -4,6 +4,31 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-09-21
+
+### Fixed
+
+- **Make the font-family remap quote-aware** (`gzhseam/fonts.py`). The v0.6.0
+  declaration-boundary anchor `(?:^|;)` still matched at a `;` *inside* a quoted
+  CSS value — e.g. the one in `content: 'step 1; font-family: bar'`. With a real
+  font-family remap on the same element, the in-quote match made `[^;]+` eat the
+  value's closing quote, leaving the content string unclosed and swallowing every
+  subsequent declaration — the exact structural corruption v0.6.0 fixed for the
+  in-quote case without a preceding `;`. `normalize_style` now precomputes a
+  per-character in-quote mask (honoring backslash escapes and per-quote-character
+  state) and leaves any match starting inside a quoted value verbatim; real
+  out-of-quote boundaries remap exactly as before, idempotency and the v0.2.0
+  data-URL fix are preserved.
+- **Stop `_attr_allowed` from crashing on a per-call `allowed_attrs` override
+  without a `"*"` key** (`gzhseam/whitelist.py`). Overrides *replace* the
+  defaults (documented since v0.5.0), but the fallback was a direct
+  `allowed_attrs["*"]` subscript — so a tag-scoped strict policy such as
+  `{"img": {"src", "alt"}}` raised a bare `KeyError: '*'` on the first tag the
+  mapping did not name, aborting the whole wash with a traceback. The fallback
+  is now `allowed_attrs.get("*", frozenset())`: unlisted tags deny all
+  attributes (the safe direction for a whitelist primitive) and the stripped
+  attrs are reported in the violations list instead of crashing.
+
 ## [0.6.0] — 2026-09-04
 
 ### Fixed

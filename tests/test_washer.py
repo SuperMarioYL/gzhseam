@@ -509,3 +509,84 @@ def test_wash_head_only_deck_fails_cleanly_no_wrapper_leak(tmp_path):
     assert "✗" in r.output
     assert "✓" not in r.output  # no green success on the corrupted/empty output
     assert not out.exists()  # no leaked-wrapper file written
+
+
+# --- v0.7.0 regression cases -------------------------------------------------
+
+
+def test_normalize_style_does_not_match_font_family_at_in_quote_semicolon():
+    """v0.7.0 fix — an in-quote ";" followed by "font-family:" text is not a
+    declaration boundary.
+
+    v0.6.0 anchored the regex to ``(?:^|;)``, but that anchor still matched at
+    a ";" INSIDE a quoted CSS value. With a real font-family remap on the same
+    element, the in-quote match made ``[^;]+`` eat the quoted value's closing
+    quote, leaving the string unclosed and swallowing every subsequent
+    declaration. The style below carries ``content: 'step 1; font-family:
+    bar'`` co-occurring with a real ``font-family: 'Fira Code'`` remap.
+    """
+    style = "font-family: 'Fira Code'; content: 'step 1; font-family: bar'; color: red"
+    new, notes = fonts.normalize_style(style)
+    assert "content: 'step 1; font-family: bar'" in new  # closing quote intact
+    assert "; color: red" in new  # live declaration after the quoted value
+    assert len(notes) == 1  # only the real 'Fira Code' remap is recorded
+
+
+def test_wash_preserves_quoted_value_containing_semicolon_font_family_text():
+    """v0.7.0 fix, end-to-end through the full wash pipeline.
+
+    The content value's closing quote and the trailing ``color: red``
+    declaration must survive; a second wash pass is idempotent (zero new
+    notes).
+    """
+    html = (
+        '<p style="font-family: \'Fira Code\'; '
+        "content: 'step 1; font-family: bar'; color: red\">x</p>"
+    )
+    art = wash(html, GzhCtx())
+    assert "content: 'step 1; font-family: bar'" in art.html
+    assert "; color: red" in art.html
+    assert len(art.notes) == 1  # the real remap only
+
+    second = wash(art.html, GzhCtx())
+    assert second.notes == []  # idempotent
+    assert "content: 'step 1; font-family: bar'" in second.html
+
+
+def test_normalize_style_quote_mask_survives_apostrophe_in_double_quoted_value():
+    """v0.7.0 quote-mask semantics — an apostrophe inside a double-quoted
+    value must not close it, so the real font-family after the value is still
+    remapped at its out-of-quote ";" boundary.
+    """
+    style = 'content: "it\'s fine"; font-family: \'Fira Code\''
+    new, notes = fonts.normalize_style(style)
+    assert '"it\'s fine"' in new  # value verbatim
+    assert "monospace" in new  # 'Fira Code' still remapped to the mono bucket
+    assert len(notes) == 1
+
+
+def test_wash_allowed_attrs_override_without_star_key_does_not_crash():
+    """v0.7.0 fix — a per-call ``allowed_attrs`` override that omits the
+    ``"*"`` key must not raise ``KeyError: '*'``.
+
+    Pre-fix, ``_attr_allowed`` subscripted ``allowed_attrs["*"]`` as the
+    fallback, so the first tag not named in the mapping aborted the whole wash
+    with a bare KeyError and no output. Post-fix, unlisted tags deny all
+    attributes (the documented replace-semantics direction) and the stripped
+    attrs are reported in the violations list.
+    """
+    ctx = GzhCtx(allowed_attrs={"img": frozenset({"src", "alt"})})
+    art = wash(
+        '<p style="color: red">hello</p>'
+        '<img src="a.png" alt="x" data-agent="1">',
+        ctx,
+    )
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(art.html, "lxml")
+    img = soup.find("img")
+    assert img.attrs == {"src": "a.png", "alt": "x"}  # exactly the named set
+    p = soup.find("p")
+    assert "style" not in p.attrs  # unlisted tag: deny-all fallback
+    assert "hello" in p.get_text()
+    assert any("stripped attrs" in v for v in art.violations)

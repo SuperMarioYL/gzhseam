@@ -133,7 +133,13 @@ def _attr_allowed(
     name = attr_name.lower()
     if name.startswith("on"):  # event handlers always stripped
         return False
-    allowed = allowed_attrs.get(tag_name, allowed_attrs["*"])
+    # v0.7.0 ``fix-allowed-attrs-override-without-star-key-crashes-wash``: a
+    # per-call override Mapping that omits the ``"*"`` key (documented usage —
+    # overrides replace the defaults, see :func:`filter_html`) used to raise a
+    # bare ``KeyError: '*'`` on the first tag the mapping does not name,
+    # aborting the whole wash. Fall back to deny-all instead: an incomplete
+    # override strips more (reported in the violations list), never crashes.
+    allowed = allowed_attrs.get(tag_name, allowed_attrs.get("*", frozenset()))
     return name in allowed
 
 
